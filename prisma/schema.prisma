@@ -1,0 +1,94 @@
+// RaveCapture Cancellation Form - Database Schema
+// This schema matches the original project structure
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Main tracking table for cancellation submissions
+model CancellationSubmission {
+  id                String   @id @default(cuid())
+  email             String
+  currentStep       String
+  status            String   @default("active")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  completedAt       DateTime?
+  
+  // Relationships
+  feedback          CancellationFeedback?
+  retention         CancellationRetention?
+  educationEvents   CancellationEducationEvent[]
+  
+  @@map("cancellation_submissions")
+}
+
+// Detailed feedback storage
+model CancellationFeedback {
+  id                    String   @id @default(cuid())
+  submissionId          String   @unique
+  cancellationReasons   String   // JSON string of reasons array
+  specificIssues         String?
+  additionalFeedback    String?
+  futurePlans           String?
+  competitorInfo        String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relationships
+  submission            CancellationSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  @@map("cancellation_feedback")
+}
+
+// Retention offer tracking
+model CancellationRetention {
+  id                String   @id @default(cuid())
+  submissionId      String   @unique
+  offerPresented    Boolean  @default(false)
+  offerAccepted     Boolean  @default(false)
+  discountAmount    Int      @default(50) // 50% discount
+  discountDuration  Int      @default(12) // 12 months
+  presentedAt       DateTime?
+  acceptedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relationships
+  submission        CancellationSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  @@map("cancellation_retention")
+}
+
+// Education step analytics
+model CancellationEducationEvent {
+  id                String   @id @default(cuid())
+  submissionId      String
+  stepName          String
+  stepType          String
+  completedAt       DateTime @default(now())
+  timeSpent         Int? // seconds spent on step
+  
+  // Relationships
+  submission        CancellationSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  
+  @@map("cancellation_education_events")
+}
+
+// Email tracking for analytics
+model EmailLog {
+  id                String   @id @default(cuid())
+  submissionId      String?
+  emailType         String
+  recipientEmail    String
+  sentAt            DateTime @default(now())
+  status            String   @default("sent") // sent, failed, bounced
+  errorMessage      String?
+  
+  @@map("email_logs")
+}
