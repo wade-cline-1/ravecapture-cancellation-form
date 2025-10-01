@@ -6,9 +6,10 @@ import { FormData } from '../CancellationForm'
 interface TechnicalIssuesEducationStepProps {
   onNext: (data?: Partial<FormData>) => void
   data: FormData
+  onTrackStep: (stepName: string, stepType: string, timeSpent?: number) => Promise<void>
 }
 
-export function TechnicalIssuesEducationStep({ onNext, data }: TechnicalIssuesEducationStepProps) {
+export function TechnicalIssuesEducationStep({ onNext, data, onTrackStep }: TechnicalIssuesEducationStepProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleNext = async () => {

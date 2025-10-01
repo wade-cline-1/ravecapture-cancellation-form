@@ -1,7 +1,17 @@
 import { ServerClient } from 'postmark'
 
-// Initialize Postmark client
-const client = new ServerClient(process.env.POSTMARK_SERVER_TOKEN!)
+// Initialize Postmark client lazily
+let client: ServerClient | null = null
+
+function getPostmarkClient(): ServerClient {
+  if (!client) {
+    if (!process.env.POSTMARK_SERVER_TOKEN) {
+      throw new Error('POSTMARK_SERVER_TOKEN environment variable is not set')
+    }
+    client = new ServerClient(process.env.POSTMARK_SERVER_TOKEN)
+  }
+  return client
+}
 
 export interface EmailTemplate {
   to: string
@@ -188,7 +198,8 @@ export const emailTemplates = {
 // Email sending functions
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
-    const response = await client.sendEmail({
+    const postmarkClient = getPostmarkClient()
+    const response = await postmarkClient.sendEmail({
       From: 'noreply@ravecapture.com',
       To: template.to,
       Subject: template.subject,
