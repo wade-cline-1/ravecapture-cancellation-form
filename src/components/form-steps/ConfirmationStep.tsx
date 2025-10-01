@@ -12,7 +12,8 @@ export function ConfirmationStep({ data }: ConfirmationStepProps) {
     // Send confirmation email when component mounts
     const sendConfirmationEmail = async () => {
       try {
-        const response = await fetch('/api/send-email', {
+        // Send user confirmation email
+        const confirmationResponse = await fetch('/api/send-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -28,13 +29,30 @@ export function ConfirmationStep({ data }: ConfirmationStepProps) {
           })
         })
 
-        if (response.ok) {
-          console.log('Confirmation email sent successfully')
+        // Send internal notification email
+        const notificationResponse = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            emailType: 'cancellation_notification',
+            data: {
+              userEmail: data.email,
+              cancellationReasons: data.cancellationReasons,
+              specificIssues: data.specificIssues,
+              additionalFeedback: data.additionalFeedback
+            }
+          })
+        })
+
+        if (confirmationResponse.ok && notificationResponse.ok) {
+          console.log('Both confirmation and notification emails sent successfully')
         } else {
-          console.error('Failed to send confirmation email')
+          console.error('Failed to send one or both emails')
         }
       } catch (error) {
-        console.error('Error sending confirmation email:', error)
+        console.error('Error sending emails:', error)
       }
     }
 
