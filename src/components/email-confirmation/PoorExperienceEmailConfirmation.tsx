@@ -28,6 +28,7 @@ export function PoorExperienceEmailConfirmation({ onNext, data }: PoorExperience
         },
         body: JSON.stringify({
           emailType: 'poor_experience_followup',
+          submissionId: data.submissionId,
           data: {
             userEmail: data.email,
             educationType: 'poor_experience',
@@ -48,8 +49,8 @@ export function PoorExperienceEmailConfirmation({ onNext, data }: PoorExperience
     }
   }
 
-  const handleContinue = () => {
-    onNext()
+  const handleReturnToDashboard = () => {
+    window.location.href = 'https://app.ravecapture.com/dashboard'
   }
 
   return (
@@ -165,10 +166,10 @@ export function PoorExperienceEmailConfirmation({ onNext, data }: PoorExperience
       )}
 
       <button 
-        onClick={handleContinue}
+        onClick={handleReturnToDashboard}
         className="rc-button-primary w-full"
       >
-        Continue
+        Return to Dashboard
       </button>
     </div>
   )

@@ -28,6 +28,7 @@ export function TechnicalIssuesConfirmationStep({ onNext, data }: TechnicalIssue
         },
         body: JSON.stringify({
           emailType: 'technical_issues_followup',
+          submissionId: data.submissionId,
           data: {
             userEmail: data.email,
             educationType: 'technical_issues',
@@ -48,8 +49,8 @@ export function TechnicalIssuesConfirmationStep({ onNext, data }: TechnicalIssue
     }
   }
 
-  const handleContinue = () => {
-    onNext()
+  const handleReturnToDashboard = () => {
+    window.location.href = 'https://app.ravecapture.com/dashboard'
   }
 
   return (
@@ -177,10 +178,10 @@ export function TechnicalIssuesConfirmationStep({ onNext, data }: TechnicalIssue
       )}
 
       <button 
-        onClick={handleContinue}
+        onClick={handleReturnToDashboard}
         className="rc-button-primary w-full"
       >
-        Continue
+        Return to Dashboard
       </button>
     </div>
   )

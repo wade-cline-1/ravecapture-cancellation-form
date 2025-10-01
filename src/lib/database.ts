@@ -1,18 +1,7 @@
-import { PrismaClient } from '@prisma/client'
+import { supabase } from './supabase'
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
-// Only initialize Prisma if DATABASE_URL is available
-let prisma: PrismaClient | null = null
-
-if (process.env.DATABASE_URL) {
-  prisma = globalForPrisma.prisma ?? new PrismaClient()
-  if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
-}
-
-export { prisma }
+// Export Supabase client for database operations
+export { supabase }
 
 // Helper functions for JSON handling
 export const serializeCancellationReasons = (reasons: string[]): string => {
@@ -25,4 +14,21 @@ export const deserializeCancellationReasons = (reasons: string): string[] => {
   } catch {
     return []
   }
+}
+
+// Reason mapping for canonical taxonomy
+const REASON_MAP = new Map<string, string>([
+  ['found better alternative', 'Not Seeing Enough Value'],
+  ['no longer needed', 'Only Needed Temporarily'],
+  ['other', 'Something Else'],
+])
+
+// Map production reason to canonical taxonomy (case-insensitive)
+export const toCanonical = (reason: string): string => {
+  return REASON_MAP.get(reason.trim().toLowerCase()) ?? reason
+}
+
+// Map array of reasons to canonical taxonomy
+export const mapReasonsToCanonical = (reasons: string[]): string[] => {
+  return reasons.map(toCanonical)
 }

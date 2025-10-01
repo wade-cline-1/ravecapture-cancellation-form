@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/database'
+import { supabaseAdmin } from '@/lib/supabase'
 
 // POST - Track education step completion
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not available' },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
     const { submissionId, stepName, stepType, timeSpent } = body
 
@@ -15,11 +22,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify submission exists
-    const submission = await prisma.cancellationSubmission.findUnique({
-      where: { id: submissionId }
-    })
+    const { data: submission, error: submissionError } = await supabaseAdmin
+      .from('cancellation_submissions')
+      .select('id')
+      .eq('id', submissionId)
+      .single()
 
-    if (!submission) {
+    if (submissionError || !submission) {
       return NextResponse.json(
         { error: 'Submission not found' },
         { status: 404 }
@@ -27,15 +36,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Create education event
-    const educationEvent = await prisma.cancellationEducationEvent.create({
-      data: {
-        submissionId,
-        stepName,
-        stepType,
-        timeSpent: timeSpent || null,
-        completedAt: new Date()
-      }
-    })
+    const { data: educationEvent, error: createError } = await supabaseAdmin
+      .from('cancellation_education_events')
+      .insert({
+        submission_id: submissionId,
+        step_name: stepName,
+        step_type: stepType,
+        time_spent: timeSpent || null,
+        completed_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (createError) {
+      console.error('Error creating education event:', createError)
+      return NextResponse.json(
+        { error: 'Failed to create education event' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       success: true,
@@ -53,6 +72,13 @@ export async function POST(request: NextRequest) {
 // GET - Retrieve education events for a submission
 export async function GET(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not available' },
+        { status: 500 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const submissionId = searchParams.get('submissionId')
 
@@ -63,10 +89,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const educationEvents = await prisma.cancellationEducationEvent.findMany({
-      where: { submissionId },
-      orderBy: { completedAt: 'asc' }
-    })
+    const { data: educationEvents, error: fetchError } = await supabaseAdmin
+      .from('cancellation_education_events')
+      .select('*')
+      .eq('submission_id', submissionId)
+      .order('completed_at', { ascending: true })
+
+    if (fetchError) {
+      console.error('Error fetching education events:', fetchError)
+      return NextResponse.json(
+        { error: 'Failed to fetch education events' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(educationEvents)
   } catch (error) {

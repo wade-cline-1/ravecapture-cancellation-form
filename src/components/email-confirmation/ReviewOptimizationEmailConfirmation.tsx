@@ -28,6 +28,7 @@ export function ReviewOptimizationEmailConfirmation({ onNext, data }: ReviewOpti
         },
         body: JSON.stringify({
           emailType: 'review_optimization_followup',
+          submissionId: data.submissionId,
           data: {
             userEmail: data.email,
             educationType: 'review_optimization',
@@ -48,8 +49,8 @@ export function ReviewOptimizationEmailConfirmation({ onNext, data }: ReviewOpti
     }
   }
 
-  const handleContinue = () => {
-    onNext()
+  const handleReturnToDashboard = () => {
+    window.location.href = 'https://app.ravecapture.com/dashboard'
   }
 
   return (
@@ -145,10 +146,10 @@ export function ReviewOptimizationEmailConfirmation({ onNext, data }: ReviewOpti
       )}
 
       <button 
-        onClick={handleContinue}
+        onClick={handleReturnToDashboard}
         className="rc-button-primary w-full"
       >
-        Continue
+        Return to Dashboard
       </button>
     </div>
   )

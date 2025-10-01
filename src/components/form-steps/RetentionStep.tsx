@@ -12,6 +12,7 @@ export function RetentionStep({ onNext, data }: RetentionStepProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleAcceptRetention = async () => {
+    console.log('✅ Retention offer accepted')
     setIsLoading(true)
     
     try {

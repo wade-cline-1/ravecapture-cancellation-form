@@ -28,6 +28,7 @@ export function RetailSyndicationConfirmationStep({ onNext, data }: RetailSyndic
         },
         body: JSON.stringify({
           emailType: 'retail_syndication_followup',
+          submissionId: data.submissionId,
           data: {
             userEmail: data.email,
             educationType: 'retail_syndication'
@@ -47,8 +48,8 @@ export function RetailSyndicationConfirmationStep({ onNext, data }: RetailSyndic
     }
   }
 
-  const handleContinue = () => {
-    onNext()
+  const handleReturnToDashboard = () => {
+    window.location.href = 'https://app.ravecapture.com/dashboard'
   }
 
   return (
@@ -172,10 +173,10 @@ export function RetailSyndicationConfirmationStep({ onNext, data }: RetailSyndic
       )}
 
       <button 
-        onClick={handleContinue}
+        onClick={handleReturnToDashboard}
         className="rc-button-primary w-full"
       >
-        Continue
+        Return to Dashboard
       </button>
     </div>
   )

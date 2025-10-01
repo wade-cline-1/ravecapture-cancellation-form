@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/database'
+import { supabase } from '@/lib/database'
 import { serializeCancellationReasons } from '@/lib/database'
 
 // GET - Retrieve form submission by ID
 export async function GET(request: NextRequest) {
   try {
-    // Check if database is available
-    if (!prisma) {
-      return NextResponse.json(
-        { error: 'Database not available' },
-        { status: 503 }
-      )
-    }
-
     const { searchParams } = new URL(request.url)
     const submissionId = searchParams.get('id')
 
@@ -23,14 +15,25 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const submission = await prisma.cancellationSubmission.findUnique({
-      where: { id: submissionId },
-      include: {
-        feedback: true,
-        retention: true,
-        educationEvents: true
-      }
-    })
+    // Get submission with related data
+    const { data: submission, error: submissionError } = await supabase
+      .from('cancellation_submissions')
+      .select(`
+        *,
+        cancellation_feedback(*),
+        cancellation_retention(*),
+        cancellation_education_events(*)
+      `)
+      .eq('id', submissionId)
+      .single()
+
+    if (submissionError) {
+      console.error('Error retrieving submission:', submissionError)
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      )
+    }
 
     if (!submission) {
       return NextResponse.json(
@@ -52,13 +55,6 @@ export async function GET(request: NextRequest) {
 // POST - Create or update form submission
 export async function POST(request: NextRequest) {
   try {
-    // Check if database is available
-    if (!prisma) {
-      return NextResponse.json(
-        { error: 'Database not available - form data will not be saved' },
-        { status: 503 }
-      )
-    }
 
     const body = await request.json()
     const { 
@@ -84,89 +80,116 @@ export async function POST(request: NextRequest) {
 
     if (submissionId) {
       // Update existing submission
-      submission = await prisma.cancellationSubmission.update({
-        where: { id: submissionId },
-        data: {
+      const { data: updatedSubmission, error: updateError } = await supabase
+        .from('cancellation_submissions')
+        .update({
           email,
           currentStep,
-          updatedAt: new Date()
-        }
-      })
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', submissionId)
+        .select()
+        .single()
+
+      if (updateError) {
+        console.error('Error updating submission:', updateError)
+        return NextResponse.json(
+          { error: 'Failed to update submission' },
+          { status: 500 }
+        )
+      }
+
+      submission = updatedSubmission
 
       // Update or create feedback
       if (cancellationReasons || specificIssues || additionalFeedback || futurePlans || competitorInfo) {
-        await prisma.cancellationFeedback.upsert({
-          where: { submissionId },
-          update: {
-            cancellationReasons: cancellationReasons ? serializeCancellationReasons(cancellationReasons) : undefined,
-            specificIssues: specificIssues || undefined,
-            additionalFeedback: additionalFeedback || undefined,
-            futurePlans: futurePlans || undefined,
-            competitorInfo: competitorInfo || undefined
-          },
-          create: {
+        const { error: feedbackError } = await supabase
+          .from('cancellation_feedback')
+          .upsert({
             submissionId,
             cancellationReasons: cancellationReasons ? serializeCancellationReasons(cancellationReasons) : '[]',
             specificIssues: specificIssues || null,
             additionalFeedback: additionalFeedback || null,
             futurePlans: futurePlans || null,
             competitorInfo: competitorInfo || null
-          }
-        })
+          })
+
+        if (feedbackError) {
+          console.error('Error updating feedback:', feedbackError)
+        }
       }
 
       // Update or create retention data
       if (retentionAccepted !== undefined) {
-        await prisma.cancellationRetention.upsert({
-          where: { submissionId },
-          update: {
-            offerAccepted: retentionAccepted,
-            acceptedAt: retentionAccepted ? new Date() : null
-          },
-          create: {
+        const { error: retentionError } = await supabase
+          .from('cancellation_retention')
+          .upsert({
             submissionId,
             offerPresented: true,
             offerAccepted: retentionAccepted,
-            presentedAt: new Date(),
-            acceptedAt: retentionAccepted ? new Date() : null
-          }
-        })
+            presentedAt: new Date().toISOString(),
+            acceptedAt: retentionAccepted ? new Date().toISOString() : null
+          })
+
+        if (retentionError) {
+          console.error('Error updating retention:', retentionError)
+        }
       }
     } else {
       // Create new submission
-      submission = await prisma.cancellationSubmission.create({
-        data: {
+      const { data: newSubmission, error: createError } = await supabase
+        .from('cancellation_submissions')
+        .insert({
           email,
           currentStep,
           status: 'active'
-        }
-      })
+        })
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Error creating submission:', createError)
+        return NextResponse.json(
+          { error: 'Failed to create submission' },
+          { status: 500 }
+        )
+      }
+
+      submission = newSubmission
 
       // Create feedback record if data provided
       if (cancellationReasons || specificIssues || additionalFeedback || futurePlans || competitorInfo) {
-        await prisma.cancellationFeedback.create({
-          data: {
+        const { error: feedbackError } = await supabase
+          .from('cancellation_feedback')
+          .insert({
             submissionId: submission.id,
             cancellationReasons: cancellationReasons ? serializeCancellationReasons(cancellationReasons) : '[]',
             specificIssues: specificIssues || null,
             additionalFeedback: additionalFeedback || null,
             futurePlans: futurePlans || null,
             competitorInfo: competitorInfo || null
-          }
-        })
+          })
+
+        if (feedbackError) {
+          console.error('Error creating feedback:', feedbackError)
+        }
       }
 
       // Create retention record if data provided
       if (retentionAccepted !== undefined) {
-        await prisma.cancellationRetention.create({
-          data: {
+        const { error: retentionError } = await supabase
+          .from('cancellation_retention')
+          .insert({
             submissionId: submission.id,
             offerPresented: true,
             offerAccepted: retentionAccepted,
-            presentedAt: new Date(),
-            acceptedAt: retentionAccepted ? new Date() : null
-          }
-        })
+            presentedAt: new Date().toISOString(),
+            acceptedAt: retentionAccepted ? new Date().toISOString() : null
+          })
+
+        if (retentionError) {
+          console.error('Error creating retention:', retentionError)
+        }
       }
     }
 

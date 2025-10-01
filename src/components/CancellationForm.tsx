@@ -12,6 +12,10 @@ import { ReviewOptimizationEducationStep } from './education-steps/ReviewOptimiz
 import { PoorExperienceEducationStep } from './education-steps/PoorExperienceEducationStep'
 import { TechnicalIssuesEducationStep } from './education-steps/TechnicalIssuesEducationStep'
 import { FeatureEducationStep } from './education-steps/FeatureEducationStep'
+import { CombinedEducationStep } from './education-steps/CombinedEducationStep'
+import { CustomAPIEducationStep } from './education-steps/CustomAPIEducationStep'
+import { GoogleBusinessEducationStep } from './education-steps/GoogleBusinessEducationStep'
+import { RetailSyndicationEducationStep } from './education-steps/RetailSyndicationEducationStep'
 
 // Calendly Integration Steps
 import { ReviewOptimizationCalendlyStep } from './calendly-steps/ReviewOptimizationCalendlyStep'
@@ -32,6 +36,38 @@ export interface FormData {
   competitorInfo?: string
   retentionAccepted?: boolean
   currentStep: string
+  selectedFeatures?: string[]
+}
+
+// Feature flag for simplified flow
+const SIMPLIFIED_FLOW = process.env.NEXT_PUBLIC_SIMPLIFIED_FLOW === 'true'
+
+// Debug: Log feature flag status
+console.log('🚀 SIMPLIFIED_FLOW feature flag:', SIMPLIFIED_FLOW)
+
+// Terminal steps that should not route to retention
+const TERMINAL_STEPS = new Set([
+  'confirmation',
+  'review_optimization_email_confirmation',
+  'poor_experience_email_confirmation',
+  'retail_syndication_confirmation',
+  'technical_issues_confirmation'
+])
+
+// Helper function to check if a step is terminal
+function isTerminal(step: string): boolean {
+  const result = TERMINAL_STEPS.has(step)
+  console.log(`🔍 isTerminal("${step}"):`, result)
+  return result
+}
+
+// Helper function for progress display (binary logic)
+export function getProgressDisplay(currentStep: string) {
+  const result = isTerminal(currentStep)
+    ? { showPercent: true, percentage: 100 }
+    : { showPercent: false, percentage: undefined }; // bar without %
+  console.log(`📊 getProgressDisplay("${currentStep}"):`, result)
+  return result
 }
 
 export function CancellationForm() {
@@ -96,28 +132,6 @@ export function CancellationForm() {
     }
   }
 
-  // Calculate progress percentage
-  const getProgressPercentage = () => {
-    const stepOrder = [
-      'feedback',
-      'review_optimization_education',
-      'poor_experience_education', 
-      'technical_issues_education',
-      'feature_education',
-      'review_optimization_calendly',
-      'poor_experience_calendly',
-      'review_optimization_email_confirmation',
-      'poor_experience_email_confirmation',
-      'retail_syndication_confirmation',
-      'technical_issues_confirmation',
-      'retention',
-      'future_plans',
-      'confirmation'
-    ]
-    
-    const currentIndex = stepOrder.indexOf(formData.currentStep)
-    return Math.round(((currentIndex + 1) / stepOrder.length) * 100)
-  }
 
   const handleStepChange = (newStep: string, data?: Partial<FormData>) => {
     setFormData(prev => ({
@@ -129,33 +143,90 @@ export function CancellationForm() {
 
   const handleNext = async (data?: Partial<FormData>) => {
     if (data) {
-      setFormData(prev => ({ ...prev, ...data }))
+      const updatedFormData = { ...formData, ...data }
+      setFormData(updatedFormData)
       
       // Save data to database
-      await saveFormData({ ...formData, ...data })
+      await saveFormData(updatedFormData)
+      
+      // Determine next step based on current step and UPDATED form data
+      const nextStep = getNextStep(formData.currentStep, updatedFormData)
+      handleStepChange(nextStep)
+    } else {
+      // Determine next step based on current step and form data
+      const nextStep = getNextStep(formData.currentStep, formData)
+      handleStepChange(nextStep)
     }
-    
-    // Determine next step based on current step and form data
-    const nextStep = getNextStep(formData.currentStep, formData)
-    handleStepChange(nextStep)
   }
 
   const getNextStep = (currentStep: string, data: FormData): string => {
+    console.log('🔍 getNextStep called:', { currentStep, data })
+    
+    // Feature flag: Handle terminal steps in simplified flow
+    if (SIMPLIFIED_FLOW && isTerminal(currentStep)) {
+      console.log('🚫 Terminal step detected - staying on same step')
+      console.log('🚫 SIMPLIFIED_FLOW:', SIMPLIFIED_FLOW, 'isTerminal:', isTerminal(currentStep))
+      return currentStep; // Terminal - no further navigation
+    }
+    
     switch (currentStep) {
       case 'feedback':
         // Route to education based on cancellation reasons
         if (data.cancellationReasons.includes('Not Getting Enough Reviews')) {
+          console.log('📊 Routing to review optimization education')
           return 'review_optimization_education'
         }
         if (data.cancellationReasons.includes('Poor Experience')) {
+          console.log('😞 Routing to poor experience education')
           return 'poor_experience_education'
         }
         if (data.cancellationReasons.includes('Technical Issues')) {
+          console.log('🔧 Routing to technical issues education')
           return 'technical_issues_education'
         }
         if (data.cancellationReasons.includes('Missing Features')) {
-          return 'feature_education'
+          // Complex feature detection logic
+          const selectedFeatures = data.selectedFeatures || []
+          console.log('🎯 Missing Features selected, features:', selectedFeatures)
+          
+          const hasAPIFeature = selectedFeatures.includes("Lacks integration requirements with my store platform")
+          const hasGoogleShoppingFeature = selectedFeatures.includes("Unable to integrate my reviews into Google Shopping Ads")
+          const hasGoogleSellerAdsFeature = selectedFeatures.includes("Cannot display reviews in Google Seller Ads")
+          const hasRetailSyndicationFeature = selectedFeatures.includes("Doesn't offer Retail Syndication")
+          const hasWidgetCustomizationFeature = selectedFeatures.includes("Can't customize my display widgets")
+          
+          console.log('🔍 Feature detection:', {
+            hasAPIFeature,
+            hasGoogleShoppingFeature,
+            hasGoogleSellerAdsFeature,
+            hasRetailSyndicationFeature,
+            hasWidgetCustomizationFeature
+          })
+          
+          if (hasAPIFeature && hasGoogleShoppingFeature) {
+            console.log('🚀 Routing to combined education')
+            return 'combined_education'
+          } else if (hasGoogleShoppingFeature) {
+            console.log('🛒 Routing to feature education (Google Shopping)')
+            return 'feature_education'
+          } else if (hasAPIFeature) {
+            console.log('⚙️ Routing to custom API education')
+            return 'custom_api_education'
+          } else if (hasGoogleSellerAdsFeature) {
+            console.log('⭐ Routing to Google Business education')
+            return 'google_business_education'
+          } else if (hasRetailSyndicationFeature) {
+            console.log('🏪 Routing to retail syndication education')
+            return 'retail_syndication_education'
+          } else if (hasWidgetCustomizationFeature) {
+            console.log('🎨 Routing to feature education (Widget)')
+            return 'feature_education'
+          } else {
+            console.log('❌ No specific features detected, routing to retention')
+            return 'retention'
+          }
         }
+        console.log('🔄 Default routing to retention')
         return 'retention'
       
       case 'review_optimization_education':
@@ -168,6 +239,18 @@ export function CancellationForm() {
         return 'technical_issues_confirmation'
       
       case 'feature_education':
+        return 'retention'
+      
+      case 'combined_education':
+        return 'retention'
+      
+      case 'custom_api_education':
+        return 'retention'
+      
+      case 'google_business_education':
+        return 'retention'
+      
+      case 'retail_syndication_education':
         return 'retail_syndication_confirmation'
       
       case 'review_optimization_calendly':
@@ -180,6 +263,13 @@ export function CancellationForm() {
       case 'poor_experience_email_confirmation':
       case 'retail_syndication_confirmation':
       case 'technical_issues_confirmation':
+        // Feature flag: Terminal steps don't route to retention in simplified flow
+        if (SIMPLIFIED_FLOW) {
+          console.log('🚫 Simplified flow: Terminal step staying on same step')
+          console.log('🚫 Current step:', currentStep, 'SIMPLIFIED_FLOW:', SIMPLIFIED_FLOW)
+          return currentStep; // Terminal - no further navigation
+        }
+        console.log('📈 Legacy flow: Routing to retention')
         return 'retention'
       
       case 'retention':
@@ -213,6 +303,18 @@ export function CancellationForm() {
       
       case 'feature_education':
         return <FeatureEducationStep onNext={handleNext} data={formData} onTrackStep={trackEducationStep} />
+      
+      case 'combined_education':
+        return <CombinedEducationStep onNext={handleNext} data={formData} onTrackStep={trackEducationStep} />
+      
+      case 'custom_api_education':
+        return <CustomAPIEducationStep onNext={handleNext} data={formData} onTrackStep={trackEducationStep} />
+      
+      case 'google_business_education':
+        return <GoogleBusinessEducationStep onNext={handleNext} data={formData} onTrackStep={trackEducationStep} />
+      
+      case 'retail_syndication_education':
+        return <RetailSyndicationEducationStep onNext={handleNext} data={formData} onTrackStep={trackEducationStep} />
       
       case 'review_optimization_calendly':
         return <ReviewOptimizationCalendlyStep onNext={handleNext} data={formData} />
@@ -248,7 +350,7 @@ export function CancellationForm() {
 
   return (
     <div className="space-y-6">
-      <ProgressBar percentage={getProgressPercentage()} />
+      <ProgressBar {...getProgressDisplay(formData.currentStep)} />
       {renderCurrentStep()}
     </div>
   )

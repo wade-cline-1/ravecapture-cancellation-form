@@ -15,12 +15,10 @@ export function PoorExperienceCalendlyStep({ onNext, data }: PoorExperienceCalen
   const handleScheduleCall = async () => {
     setIsScheduling(true)
     
-    // Simulate Calendly integration
-    // In a real implementation, this would:
-    // 1. Open Calendly widget or redirect to Calendly page
-    // 2. Handle the scheduling callback
-    // 3. Store the scheduled appointment details
+    // Open Wade's Calendly page for poor experience discussions
+    window.open('https://calendly.com/wade-cline/discussionaboutcurrentplan', '_blank')
     
+    // Simulate scheduling completion
     setTimeout(() => {
       setIsScheduling(false)
       setScheduled(true)

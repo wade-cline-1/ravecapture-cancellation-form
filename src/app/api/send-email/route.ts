@@ -12,10 +12,17 @@ import {
   RetentionEmailData,
   EducationEmailData
 } from '@/lib/email'
-import { prisma } from '@/lib/database'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not available' },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
     const { emailType, data, submissionId } = body
 
@@ -26,8 +33,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if email was already sent (idempotency check)
+    if (submissionId) {
+      const { data: existingLog, error: checkError } = await supabaseAdmin
+        .from('email_logs')
+        .select('id, status')
+        .eq('submissionId', submissionId)
+        .eq('emailType', emailType)
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error checking email log:', checkError)
+        return NextResponse.json(
+          { error: 'Failed to check email status' },
+          { status: 500 }
+        )
+      }
+
+      if (existingLog) {
+        console.log(`Email ${emailType} already sent for submission ${submissionId}`)
+        return NextResponse.json({
+          success: true,
+          status: 'already_sent',
+          message: 'Email was already sent'
+        })
+      }
+    }
+
     let emailSent = false
-    let emailLog = null
+    let emailLogId: string | null = null
 
     try {
       // Send email based on type
@@ -63,45 +97,70 @@ export async function POST(request: NextRequest) {
           )
       }
 
-      // Log email attempt (only if database is available)
-      if (prisma) {
-        emailLog = await prisma.emailLog.create({
-          data: {
-            submissionId: submissionId || null,
-            emailType,
-            recipientEmail: data.userEmail || data.to,
-            status: emailSent ? 'sent' : 'failed',
-            errorMessage: emailSent ? null : 'Email sending failed'
+      // Log email attempt in database (with unique constraint for idempotency)
+      if (submissionId) {
+        try {
+          const { data: logData, error: logError } = await supabaseAdmin
+            .from('email_logs')
+            .insert({
+              submissionId,
+              emailType,
+              recipientEmail: data.email || data.userEmail,
+              status: emailSent ? 'sent' : 'failed',
+              errorMessage: emailSent ? null : 'Email sending failed'
+            })
+            .select('id')
+            .single()
+
+          if (logError) {
+            // Check if it's a unique constraint violation (duplicate email)
+            if (logError.code === '23505') {
+              console.log(`Email ${emailType} already logged for submission ${submissionId}`)
+              return NextResponse.json({
+                success: true,
+                status: 'already_sent',
+                message: 'Email was already sent'
+              })
+            }
+            console.error('Error logging email:', logError)
+          } else {
+            emailLogId = logData.id
           }
-        })
+        } catch (logError) {
+          console.error('Error in email logging:', logError)
+          // Don't fail the request if logging fails
+        }
       }
 
       return NextResponse.json({
         success: emailSent,
-        messageId: emailLog.id,
-        status: emailSent ? 'sent' : 'failed'
+        status: emailSent ? 'sent' : 'failed',
+        emailLogId
       })
 
     } catch (emailError) {
       console.error('Email sending error:', emailError)
-      
-      // Log failed email attempt (only if database is available)
-      if (!emailLog && prisma) {
-        emailLog = await prisma.emailLog.create({
-          data: {
-            submissionId: submissionId || null,
-            emailType,
-            recipientEmail: data.userEmail || data.to,
-            status: 'failed',
-            errorMessage: emailError instanceof Error ? emailError.message : 'Unknown error'
-          }
-        })
+
+      // Log failed email attempt
+      if (submissionId) {
+        try {
+          await supabaseAdmin
+            .from('email_logs')
+            .insert({
+              submissionId,
+              emailType,
+              recipientEmail: data.email || data.userEmail,
+              status: 'failed',
+              errorMessage: emailError instanceof Error ? emailError.message : 'Unknown error'
+            })
+        } catch (logError) {
+          console.error('Error logging failed email:', logError)
+        }
       }
 
       return NextResponse.json({
         success: false,
-        error: 'Failed to send email',
-        messageId: emailLog.id
+        error: 'Failed to send email'
       }, { status: 500 })
     }
 
