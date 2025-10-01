@@ -113,6 +113,27 @@ export const emailTemplates = {
     textBody: `Welcome Back!\n\nHi ${data.userName || 'there'},\n\nWe're thrilled that you've decided to stay with RaveCapture!\n\nYour ${data.discountAmount}% discount for ${data.discountDuration} months has been applied to your account.\n\nWe're committed to making your experience better and will be in touch soon to ensure you're getting the most out of our platform.\n\nThank you for your continued trust in RaveCapture.\n\nBest regards,\nThe RaveCapture Team`
   }),
 
+  // Retention acceptance notification (internal)
+  retentionAcceptance: (data: CancellationEmailData) => {
+    const reasons = getReasonsArray(data.cancellationReasons)
+    return {
+      to: 'support@ravecapture.com',
+      subject: `Retention Offer Accepted: ${data.userEmail}`,
+      htmlBody: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #16a34a;">Retention Offer Accepted!</h2>
+          <p><strong>User:</strong> ${data.userEmail}</p>
+          <p><strong>Original Reasons:</strong> ${reasons.join(', ')}</p>
+          ${data.specificIssues ? `<p><strong>Specific Issues:</strong> ${data.specificIssues}</p>` : ''}
+          ${data.additionalFeedback ? `<p><strong>Additional Feedback:</strong> ${data.additionalFeedback}</p>` : ''}
+          <p><strong>Action Required:</strong> Apply 50% discount to their account for 12 months</p>
+          <p>Please ensure the discount is properly applied and follow up with the user.</p>
+        </div>
+      `,
+      textBody: `Retention Offer Accepted!\n\nUser: ${data.userEmail}\nOriginal Reasons: ${reasons.join(', ')}\n${data.specificIssues ? `Specific Issues: ${data.specificIssues}\n` : ''}${data.additionalFeedback ? `Additional Feedback: ${data.additionalFeedback}\n` : ''}\nAction Required: Apply 50% discount to their account for 12 months\n\nPlease ensure the discount is properly applied and follow up with the user.`
+    }
+  },
+
   // Education follow-up emails
   reviewOptimizationFollowUp: (data: EducationEmailData) => ({
     to: data.userEmail,
@@ -228,6 +249,11 @@ export async function sendCancellationNotification(data: CancellationEmailData):
 
 export async function sendRetentionConfirmation(data: RetentionEmailData): Promise<boolean> {
   const template = emailTemplates.retentionConfirmation(data)
+  return await sendEmail(template)
+}
+
+export async function sendRetentionAcceptance(data: CancellationEmailData): Promise<boolean> {
+  const template = emailTemplates.retentionAcceptance(data)
   return await sendEmail(template)
 }
 

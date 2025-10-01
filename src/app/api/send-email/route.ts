@@ -3,6 +3,7 @@ import {
   sendCancellationConfirmation, 
   sendCancellationNotification, 
   sendRetentionConfirmation,
+  sendRetentionAcceptance,
   sendReviewOptimizationFollowUp,
   sendPoorExperienceFollowUp,
   sendRetailSyndicationFollowUp,
@@ -39,6 +40,9 @@ export async function POST(request: NextRequest) {
           break
         case 'retention_confirmation':
           emailSent = await sendRetentionConfirmation(data as RetentionEmailData)
+          break
+        case 'retention_acceptance':
+          emailSent = await sendRetentionAcceptance(data as CancellationEmailData)
           break
         case 'review_optimization_followup':
           emailSent = await sendReviewOptimizationFollowUp(data as EducationEmailData)
