@@ -26,6 +26,21 @@ export function ReviewOptimizationEducationStep({ onNext, data, onTrackStep }: R
     }
   }
 
+  const handleCancelAnyway = async () => {
+    setIsLoading(true)
+    
+    try {
+      // Track education step completion with cancel action
+      if (onTrackStep) {
+        onTrackStep('review_optimization_education', 'education_cancel', undefined)
+      }
+      // Route directly to retention step
+      onNext({ currentStep: 'retention' })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -86,7 +101,19 @@ export function ReviewOptimizationEducationStep({ onNext, data, onTrackStep }: R
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-between">
+        <button
+          onClick={handleCancelAnyway}
+          disabled={isLoading}
+          className={`rc-button-secondary ${
+            isLoading 
+              ? 'opacity-50 cursor-not-allowed' 
+              : ''
+          }`}
+        >
+          {isLoading ? 'Loading...' : 'Cancel Anyway'}
+        </button>
+        
         <button
           onClick={handleNext}
           disabled={isLoading}

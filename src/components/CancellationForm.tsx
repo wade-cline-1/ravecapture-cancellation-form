@@ -230,6 +230,10 @@ export function CancellationForm() {
         return 'retention'
       
       case 'review_optimization_education':
+        // Check if user clicked "Cancel Anyway" - if so, go to retention
+        if (data.currentStep === 'retention') {
+          return 'retention'
+        }
         return 'review_optimization_calendly'
       
       case 'poor_experience_education':
