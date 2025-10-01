@@ -32,7 +32,7 @@ export function PoorExperienceEmailConfirmation({ onNext, data }: PoorExperience
           data: {
             userEmail: data.email,
             educationType: 'poor_experience',
-            calendlyUrl: data.calendlyScheduled ? 'https://calendly.com/ravecapture/experience-review' : undefined
+            calendlyUrl: data.calendlyScheduled ? 'https://calendly.com/wade-cline/discussionaboutcurrentplan' : undefined
           }
         })
       })
