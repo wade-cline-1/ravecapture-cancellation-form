@@ -6,6 +6,10 @@
   NODE_VERSION = "22"
   NPM_FLAGS = "--version"
 
+# Disable secrets scanning for expected public environment variables
+# These NEXT_PUBLIC_ variables are intentionally exposed to the client-side
+SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_APP_URL,NEXT_PUBLIC_APP_NAME,NEXT_PUBLIC_CALENDLY_URL"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 

@@ -6,12 +6,12 @@ Create a file called `.env.local` in your project root with the following conten
 
 ```env
 # Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://grkxfjzshcqymqmqjtqn.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
 # Database URL for Prisma (Supabase PostgreSQL)
-DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.grkxfjzshcqymqmqjtqn.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.your-project.supabase.co:5432/postgres
 
 # Postmark Email Service
 POSTMARK_SERVER_TOKEN=your_postmark_server_token
@@ -50,10 +50,10 @@ NEXT_PUBLIC_SIMPLIFIED_FLOW=true
 ## Example of completed .env.local:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://grkxfjzshcqymqmqjtqn.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-DATABASE_URL=postgresql://postgres:your_actual_password@db.grkxfjzshcqymqmqjtqn.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres:your_actual_password@db.your-project.supabase.co:5432/postgres
 NEXT_PUBLIC_SIMPLIFIED_FLOW=true
 ```
 
