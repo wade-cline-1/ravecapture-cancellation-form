@@ -59,16 +59,18 @@ export async function POST(request: NextRequest) {
           )
       }
 
-      // Log email attempt
-      emailLog = await prisma.emailLog.create({
-        data: {
-          submissionId: submissionId || null,
-          emailType,
-          recipientEmail: data.userEmail || data.to,
-          status: emailSent ? 'sent' : 'failed',
-          errorMessage: emailSent ? null : 'Email sending failed'
-        }
-      })
+      // Log email attempt (only if database is available)
+      if (prisma) {
+        emailLog = await prisma.emailLog.create({
+          data: {
+            submissionId: submissionId || null,
+            emailType,
+            recipientEmail: data.userEmail || data.to,
+            status: emailSent ? 'sent' : 'failed',
+            errorMessage: emailSent ? null : 'Email sending failed'
+          }
+        })
+      }
 
       return NextResponse.json({
         success: emailSent,
@@ -79,8 +81,8 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       console.error('Email sending error:', emailError)
       
-      // Log failed email attempt
-      if (!emailLog) {
+      // Log failed email attempt (only if database is available)
+      if (!emailLog && prisma) {
         emailLog = await prisma.emailLog.create({
           data: {
             submissionId: submissionId || null,

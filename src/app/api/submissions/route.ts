@@ -5,6 +5,14 @@ import { serializeCancellationReasons } from '@/lib/database'
 // GET - Retrieve form submission by ID
 export async function GET(request: NextRequest) {
   try {
+    // Check if database is available
+    if (!prisma) {
+      return NextResponse.json(
+        { error: 'Database not available' },
+        { status: 503 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const submissionId = searchParams.get('id')
 
@@ -44,6 +52,14 @@ export async function GET(request: NextRequest) {
 // POST - Create or update form submission
 export async function POST(request: NextRequest) {
   try {
+    // Check if database is available
+    if (!prisma) {
+      return NextResponse.json(
+        { error: 'Database not available - form data will not be saved' },
+        { status: 503 }
+      )
+    }
+
     const body = await request.json()
     const { 
       email, 
