@@ -24,12 +24,13 @@ export function CustomAPIEducationStep({ onNext, data, onTrackStep }: CustomAPIE
     }
   }
 
-  const handleNotInterested = async () => {
+  const handleCancelAnyway = async () => {
     setIsLoading(true)
     
     try {
-      await onTrackStep('custom_api_education', 'education_dismissed')
-      onNext()
+      await onTrackStep('custom_api_education', 'education_cancel')
+      // Route directly to retention step
+      onNext({ currentStep: 'retention' })
     } finally {
       setIsLoading(false)
     }
@@ -103,16 +104,15 @@ export function CustomAPIEducationStep({ onNext, data, onTrackStep }: CustomAPIE
         </button>
         
         <button
-          onClick={handleNotInterested}
+          onClick={handleCancelAnyway}
           disabled={isLoading}
-          className={`inline-flex items-center px-4 py-2 border-2 border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors ${
+          className={`rc-button-secondary ${
             isLoading 
               ? 'opacity-50 cursor-not-allowed' 
               : ''
           }`}
         >
-          <XCircle className="h-5 w-5 mr-2 text-gray-400" />
-          Not Interested
+          {isLoading ? 'Loading...' : 'Cancel Anyway'}
         </button>
       </div>
     </div>

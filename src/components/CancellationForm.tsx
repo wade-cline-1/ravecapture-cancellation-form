@@ -237,24 +237,48 @@ export function CancellationForm() {
         return 'review_optimization_calendly'
       
       case 'poor_experience_education':
+        // Check if user clicked "Cancel Anyway" - if so, go to retention
+        if (data.currentStep === 'retention') {
+          return 'retention'
+        }
         return 'poor_experience_calendly'
       
       case 'technical_issues_education':
+        // Check if user clicked "Cancel Anyway" - if so, go to retention
+        if (data.currentStep === 'retention') {
+          return 'retention'
+        }
         return 'technical_issues_confirmation'
       
       case 'feature_education':
         return 'retention'
       
       case 'combined_education':
+        // Check if user clicked "Cancel Anyway" - if so, go to retention
+        if (data.currentStep === 'retention') {
+          return 'retention'
+        }
         return 'retention'
       
       case 'custom_api_education':
+        // Check if user clicked "Cancel Anyway" - if so, go to retention
+        if (data.currentStep === 'retention') {
+          return 'retention'
+        }
         return 'retention'
       
       case 'google_business_education':
+        // Check if user clicked "Cancel Anyway" - if so, go to retention
+        if (data.currentStep === 'retention') {
+          return 'retention'
+        }
         return 'retention'
       
       case 'retail_syndication_education':
+        // Check if user clicked "Cancel Anyway" - if so, go to retention
+        if (data.currentStep === 'retention') {
+          return 'retention'
+        }
         return 'retail_syndication_confirmation'
       
       case 'review_optimization_calendly':

@@ -16,7 +16,26 @@ export function PoorExperienceEducationStep({ onNext, data, onTrackStep }: PoorE
     setIsLoading(true)
     
     try {
+      // Track education step completion
+      if (onTrackStep) {
+        onTrackStep('poor_experience_education', 'education', undefined)
+      }
       onNext()
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCancelAnyway = async () => {
+    setIsLoading(true)
+    
+    try {
+      // Track education step completion with cancel action
+      if (onTrackStep) {
+        onTrackStep('poor_experience_education', 'education_cancel', undefined)
+      }
+      // Route directly to retention step
+      onNext({ currentStep: 'retention' })
     } finally {
       setIsLoading(false)
     }
@@ -82,7 +101,19 @@ export function PoorExperienceEducationStep({ onNext, data, onTrackStep }: PoorE
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-between">
+        <button
+          onClick={handleCancelAnyway}
+          disabled={isLoading}
+          className={`rc-button-secondary ${
+            isLoading 
+              ? 'opacity-50 cursor-not-allowed' 
+              : ''
+          }`}
+        >
+          {isLoading ? 'Loading...' : 'Cancel Anyway'}
+        </button>
+        
         <button
           onClick={handleNext}
           disabled={isLoading}
