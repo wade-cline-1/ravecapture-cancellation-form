@@ -1,7 +1,9 @@
-import { supabase } from './supabase'
+import { supabase, supabaseAdmin } from './supabase'
 
-// Export Supabase client for database operations
-export { supabase }
+// Export Supabase clients for database operations
+// IMPORTANT: Use supabaseAdmin for server-side API routes (bypasses RLS with service role key)
+// Use supabase only for client-side operations (uses anon key with RLS)
+export { supabase, supabaseAdmin }
 
 // Helper functions for JSON handling
 export const serializeCancellationReasons = (reasons: string[]): string => {

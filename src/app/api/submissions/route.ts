@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/database'
+import { supabaseAdmin } from '@/lib/database'
 import { serializeCancellationReasons } from '@/lib/database'
 
 // GET - Retrieve form submission by ID
 export async function GET(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not available' },
+        { status: 500 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const submissionId = searchParams.get('id')
 
@@ -16,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get submission with related data
-    const { data: submission, error: submissionError } = await supabase
+    const { data: submission, error: submissionError } = await supabaseAdmin
       .from('cancellation_submissions')
       .select(`
         *,
@@ -55,6 +62,12 @@ export async function GET(request: NextRequest) {
 // POST - Create or update form submission
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not available' },
+        { status: 500 }
+      )
+    }
 
     const body = await request.json()
     const { 
@@ -76,11 +89,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate cancellationReasons if provided
+    if (cancellationReasons !== undefined && Array.isArray(cancellationReasons) && cancellationReasons.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one cancellation reason is required' },
+        { status: 400 }
+      )
+    }
+
     let submission
 
     if (submissionId) {
       // Update existing submission
-      const { data: updatedSubmission, error: updateError } = await supabase
+      const { data: updatedSubmission, error: updateError } = await supabaseAdmin
         .from('cancellation_submissions')
         .update({
           email,
@@ -103,7 +124,7 @@ export async function POST(request: NextRequest) {
 
       // Update or create feedback
       if (cancellationReasons || specificIssues || additionalFeedback || futurePlans || competitorInfo) {
-        const { error: feedbackError } = await supabase
+        const { error: feedbackError } = await supabaseAdmin
           .from('cancellation_feedback')
           .upsert({
             submissionId,
@@ -112,6 +133,8 @@ export async function POST(request: NextRequest) {
             additionalFeedback: additionalFeedback || null,
             futurePlans: futurePlans || null,
             competitorInfo: competitorInfo || null
+          }, {
+            onConflict: 'submissionId'
           })
 
         if (feedbackError) {
@@ -121,7 +144,7 @@ export async function POST(request: NextRequest) {
 
       // Update or create retention data
       if (retentionAccepted !== undefined) {
-        const { error: retentionError } = await supabase
+        const { error: retentionError } = await supabaseAdmin
           .from('cancellation_retention')
           .upsert({
             submissionId,
@@ -129,6 +152,8 @@ export async function POST(request: NextRequest) {
             offerAccepted: retentionAccepted,
             presentedAt: new Date().toISOString(),
             acceptedAt: retentionAccepted ? new Date().toISOString() : null
+          }, {
+            onConflict: 'submissionId'
           })
 
         if (retentionError) {
@@ -137,7 +162,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Create new submission
-      const { data: newSubmission, error: createError } = await supabase
+      const { data: newSubmission, error: createError } = await supabaseAdmin
         .from('cancellation_submissions')
         .insert({
           email,
@@ -159,7 +184,7 @@ export async function POST(request: NextRequest) {
 
       // Create feedback record if data provided
       if (cancellationReasons || specificIssues || additionalFeedback || futurePlans || competitorInfo) {
-        const { error: feedbackError } = await supabase
+        const { error: feedbackError } = await supabaseAdmin
           .from('cancellation_feedback')
           .insert({
             submissionId: submission.id,
@@ -177,7 +202,7 @@ export async function POST(request: NextRequest) {
 
       // Create retention record if data provided
       if (retentionAccepted !== undefined) {
-        const { error: retentionError } = await supabase
+        const { error: retentionError } = await supabaseAdmin
           .from('cancellation_retention')
           .insert({
             submissionId: submission.id,

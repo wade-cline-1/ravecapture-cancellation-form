@@ -39,11 +39,11 @@ export async function POST(request: NextRequest) {
     const { data: educationEvent, error: createError } = await supabaseAdmin
       .from('cancellation_education_events')
       .insert({
-        submission_id: submissionId,
-        step_name: stepName,
-        step_type: stepType,
-        time_spent: timeSpent || null,
-        completed_at: new Date().toISOString()
+        submissionId: submissionId,
+        stepName: stepName,
+        stepType: stepType,
+        timeSpent: timeSpent || null,
+        completedAt: new Date().toISOString()
       })
       .select()
       .single()
@@ -92,8 +92,8 @@ export async function GET(request: NextRequest) {
     const { data: educationEvents, error: fetchError } = await supabaseAdmin
       .from('cancellation_education_events')
       .select('*')
-      .eq('submission_id', submissionId)
-      .order('completed_at', { ascending: true })
+      .eq('submissionId', submissionId)
+      .order('completedAt', { ascending: true })
 
     if (fetchError) {
       console.error('Error fetching education events:', fetchError)
