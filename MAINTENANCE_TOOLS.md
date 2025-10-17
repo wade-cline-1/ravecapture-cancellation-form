@@ -67,6 +67,22 @@ This document outlines the key tools and resources kept for ongoing maintenance,
 
 ---
 
+### **6. COMPLETION_VIEW_GUIDE.md**
+**Purpose:** Guide for the `completed_cancellations` database view  
+**When to use:**
+- Querying completion data and outcomes
+- Analyzing retention offer success rates
+- Building admin dashboards
+- Generating reports on cancellation trends
+
+**Key features:**
+- Shows only users who completed the flow
+- Includes cancellation reason, education path, and final outcome
+- Queryable with SQL or via Supabase client (service role)
+- Real-time view (always up-to-date)
+
+---
+
 ## 🧪 **Testing Tools**
 
 ### **test-app-comprehensive.js** ⭐
@@ -145,6 +161,7 @@ All migrations are stored in: `supabase/migrations/`
 - `20251001170000_add_email_idempotency.sql` - Email uniqueness
 - `20251017000000_enable_rls_security.sql` - Enable RLS
 - `20251017000001_secure_rls_policies.sql` - Security policies
+- `20251017000002_create_completion_view.sql` - Completion master view
 
 **When adding new migrations:**
 1. Create migration file with timestamp
@@ -300,6 +317,7 @@ git push                             # Push to remote
 - ✅ `test-app-comprehensive.js` - Run before every deployment
 - ✅ `TEST_GUIDE.md` - How to use the test suite
 - ✅ `SECURITY_AUDIT_REPORT.md` - Security implementation reference
+- ✅ `COMPLETION_VIEW_GUIDE.md` - How to query completion data
 - ✅ `MAINTENANCE_TOOLS.md` (this file) - Quick reference guide
 
 **Regular tasks:**
