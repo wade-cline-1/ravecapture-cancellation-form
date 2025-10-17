@@ -38,7 +38,9 @@ export function ConfirmationStep({ data }: ConfirmationStepProps) {
             body: JSON.stringify({
               emailType: 'retention_confirmation',
               data: {
-                userEmail: data.email
+                userEmail: data.email,
+                discountAmount: 50,
+                discountDuration: 12
               }
             })
           })
